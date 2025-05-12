@@ -1,5 +1,22 @@
+# 민감한 정보
+.env
+*.env
 *.key
 *.pem
-*.env
-.env*
-*.log
+
+# 설정 파일
+config.json
+*.config
+.git/
+
+# Python 가상환경
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# 빌드 파일
+dist/
+build/
