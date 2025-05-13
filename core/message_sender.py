@@ -15,7 +15,13 @@ class MessageSender:
         self.rate_limiter = rate_limiter
         self.event_logger = event_logger
         self.dashboard = dashboard
-        self.semaphore = asyncio.Semaphore(self.rate_limiter.config["rate_limits"]["max_concurrent_accounts"])
+        # max_concurrent_accounts를 ConfigManager에서 가져와야 함
+        # rate_limiter에서 config에 직접 접근하지 않고 별도로 전달받아야 함
+        self.semaphore = asyncio.Semaphore(5)  # 기본값 5로 설정
+
+    def set_max_concurrent_accounts(self, max_accounts):
+        """최대 동시 계정 수 설정"""
+        self.semaphore = asyncio.Semaphore(max_accounts)
 
     async def detect_chat_type(self, client, target):
         """채팅 타입 감지"""
@@ -75,10 +81,12 @@ class MessageSender:
         remaining_messages = total_messages
         account_ids = [f"{s['username']} (...{s['phone']})" for s in sessions]
 
-        print(f"총 {total_messages}회 메시지 전송 시작 (계정 수: {len(sessions)}, 우선순위: {self.rate_limiter.config['rate_limits']['priority_mode']})")
+        # rate_limiter에서 직접 priority_mode 가져오는 대신 기본값 사용
+        priority_mode = "balanced"  # 기본값
+        print(f"총 {total_messages}회 메시지 전송 시작 (계정 수: {len(sessions)}, 우선순위: {priority_mode})")
 
         while remaining_messages > 0 and account_ids:
-            available_accounts = self.rate_limiter.get_next_available(account_ids, self.rate_limiter.config["rate_limits"]["priority_mode"], chat_type)
+            available_accounts = self.rate_limiter.get_next_available(account_ids, priority_mode, chat_type)
             if not available_accounts:
                 print("모든 계정이 제한에 도달했습니다. 작업 종료.")
                 self.event_logger.on_rate_limit_hit({"accounts": account_ids})

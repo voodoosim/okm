@@ -1,7 +1,7 @@
-# ui/panels/function_panel.py
 import customtkinter as ctk
 from .base_panel import BasePanel
 from typing import Callable, Optional
+
 
 class FunctionPanel(BasePanel):
     """기능 선택 패널 - 우측 버튼 그룹"""
@@ -13,20 +13,24 @@ class FunctionPanel(BasePanel):
         self.current_function = None
         self.on_function_change: Optional[Callable] = None
         self.setup_ui()
+        print("FunctionPanel initialized")
 
     def setup_ui(self):
         """기능 패널 UI 설정"""
+        print("Setting up FunctionPanel UI...")
         # 헤더
         header_frame = ctk.CTkFrame(self)
         header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        print("Header frame created")
 
         ctk.CTkLabel(
             header_frame,
             text="기능 선택",
             font=("", 14, "bold")
         ).pack()
+        print("Title label added")
 
-        # 기능 목록 정의
+        # 기능 목록 정의 (대화 모드 제거)
         self.functions = [
             {
                 "name": "기본 전송",
@@ -53,12 +57,6 @@ class FunctionPanel(BasePanel):
                 "category": "전송"
             },
             {
-                "name": "대화 모드",
-                "icon": "💬",
-                "description": "AI 대화 기능",
-                "category": "특수"
-            },
-            {
                 "name": "대시보드",
                 "icon": "📊",
                 "description": "실시간 상태 모니터링",
@@ -74,6 +72,7 @@ class FunctionPanel(BasePanel):
 
         # 기능 버튼 생성
         self.create_function_buttons()
+        print("Function buttons created")
 
         # 기본값으로 "기본 전송" 선택
         self.select_function("기본 전송")
@@ -90,7 +89,6 @@ class FunctionPanel(BasePanel):
 
         # 카테고리별 버튼 생성
         for category, funcs in categories.items():
-            # 카테고리 라벨
             if len(categories) > 1:  # 카테고리가 여러 개인 경우만 표시
                 category_label = ctk.CTkLabel(
                     self,
@@ -99,8 +97,8 @@ class FunctionPanel(BasePanel):
                     text_color="gray"
                 )
                 category_label.pack(anchor="w", padx=15, pady=(10, 5))
+                print(f"Category label added: {category}")
 
-            # 기능 버튼들
             for func in funcs:
                 button = ctk.CTkButton(
                     self,
@@ -110,38 +108,31 @@ class FunctionPanel(BasePanel):
                     command=lambda f=func['name']: self.select_function(f)
                 )
                 button.pack(fill="x", padx=10, pady=2)
-
-                # 툴팁 효과 (마우스 오버 시 설명 표시)
                 self.create_tooltip(button, func['description'])
-
                 self.function_buttons[func['name']] = button
+                print(f"Button added: {func['name']}")
 
     def create_tooltip(self, widget, text):
         """버튼에 툴팁 추가"""
         def show_tooltip(event):
-            # 간단한 툴팁 구현 (선택사항)
-            pass
-
+            pass  # 간단한 툴팁 구현 (선택사항)
         widget.bind("<Enter>", show_tooltip)
 
     def select_function(self, function_name: str):
         """기능 선택"""
-        # 이전 선택 버튼 색상 리셋
         if self.current_function:
             self.function_buttons[self.current_function].configure(
                 fg_color=["#3B8ED0", "#1F6AA5"]
             )
 
-        # 현재 선택 버튼 강조
         self.function_buttons[function_name].configure(
             fg_color=self.COLORS["primary"]
         )
 
-        # 상태 업데이트
         self.current_function = function_name
         self.show_info(f"기능 선택: {function_name}")
+        print(f"Function selected: {function_name}")
 
-        # 콜백 실행
         if self.on_function_change:
             self.on_function_change(function_name)
 

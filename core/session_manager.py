@@ -2,13 +2,14 @@ import os
 from typing import List, Dict, Union
 from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError
-from config_manager import get_config
+from core.config_manager import ConfigManager
 
 class SessionManager:
     def __init__(self):
         self.sessions_dir = "sessions"
         os.makedirs(self.sessions_dir, exist_ok=True)
-        self.config = get_config()
+        self.config_manager = ConfigManager()
+        self.config = self.config_manager.get_config()  # get_config() 메서드 사용
 
     def get_session_list(self) -> List[Dict[str, str]]:
         """Returns list of sessions with metadata."""
@@ -20,14 +21,19 @@ class SessionManager:
                 phone = f"...{name[-4:]}"  # Partial phone number
                 username = "Unknown"
                 try:
-                    with TelegramClient(
-                        os.path.join(self.sessions_dir, name),
-                        self.config["api_id"],
-                        self.config["api_hash"],
-                    ) as client:
-                        if client.is_connected():
-                            me = client.get_me()
-                            username = me.username or "Unknown"
+                    # config에서 API 정보 가져오기
+                    api_id = self.config["api_settings"]["api_id"]
+                    api_hash = self.config["api_settings"]["api_hash"]
+
+                    if api_id and api_hash:
+                        with TelegramClient(
+                            os.path.join(self.sessions_dir, name),
+                            api_id,
+                            api_hash,
+                        ) as client:
+                            if client.is_connected():
+                                me = client.get_me()
+                                username = me.username or "Unknown"
                 except Exception:
                     pass
                 sessions.append({"name": name, "username": username, "phone": phone, "status": status})
@@ -39,8 +45,14 @@ class SessionManager:
         if not os.path.exists(session_path):
             return "unknown"
         try:
+            api_id = self.config["api_settings"]["api_id"]
+            api_hash = self.config["api_settings"]["api_hash"]
+
+            if not api_id or not api_hash:
+                return "unknown"
+
             with TelegramClient(
-                session_path, self.config["api_id"], self.config["api_hash"]
+                session_path, api_id, api_hash
             ) as client:
                 if client.is_connected():
                     return "active"
@@ -51,11 +63,17 @@ class SessionManager:
     def create_new_session(self, phone_number: str) -> Dict[str, Union[bool, str]]:
         """Creates new Telegram session."""
         try:
+            api_id = self.config["api_settings"]["api_id"]
+            api_hash = self.config["api_settings"]["api_hash"]
+
+            if not api_id or not api_hash:
+                return {"success": False, "session_name": "", "error": "API ID/Hash not configured"}
+
             session_name = phone_number.replace("+", "")
             client = TelegramClient(
                 os.path.join(self.sessions_dir, session_name),
-                self.config["api_id"],
-                self.config["api_hash"],
+                api_id,
+                api_hash,
             )
             client.start(phone=phone_number)
             return {"success": True, "session_name": session_name, "error": ""}

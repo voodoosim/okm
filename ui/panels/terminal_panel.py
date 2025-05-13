@@ -1,11 +1,8 @@
-# ui/panels/terminal_panel.py 전체 수정
 import customtkinter as ctk
 from .base_panel import BasePanel
 from tkinter import filedialog
 import os
-from typing import Optional
-import threading
-import time
+
 
 class TerminalPanel(BasePanel):
     """통합 터미널 패널 - 하단 영역"""
@@ -15,15 +12,16 @@ class TerminalPanel(BasePanel):
         self.pack_propagate(False)  # 고정 높이 유지
         self.command_history = []
         self.history_index = -1
-        self.session_manager = None
-        self.message_sender = None
         self.setup_ui()
+        print("TerminalPanel initialized")
 
     def setup_ui(self):
         """터미널 패널 UI 설정"""
+        print("Setting up TerminalPanel UI...")
         # 헤더 영역
         header_frame = ctk.CTkFrame(self)
         header_frame.pack(fill="x", padx=10, pady=(10, 5))
+        print("Header frame created")
 
         # 제목
         ctk.CTkLabel(
@@ -31,10 +29,12 @@ class TerminalPanel(BasePanel):
             text="통합 터미널",
             font=("", 14, "bold")
         ).pack(side="left")
+        print("Title label added")
 
         # 터미널 옵션 버튼
         options_frame = ctk.CTkFrame(header_frame)
         options_frame.pack(side="right")
+        print("Options frame created")
 
         ctk.CTkButton(
             options_frame,
@@ -43,6 +43,7 @@ class TerminalPanel(BasePanel):
             height=25,
             command=self.clear_terminal
         ).pack(side="right", padx=5)
+        print("Clear button added")
 
         ctk.CTkButton(
             options_frame,
@@ -51,6 +52,7 @@ class TerminalPanel(BasePanel):
             height=25,
             command=self.save_terminal_log
         ).pack(side="right", padx=5)
+        print("Save log button added")
 
         # 터미널 출력 영역
         self.terminal_output = ctk.CTkTextbox(
@@ -60,10 +62,12 @@ class TerminalPanel(BasePanel):
             wrap="word"
         )
         self.terminal_output.pack(fill="both", expand=True, padx=10, pady=(0, 5))
+        print("Terminal output textbox added")
 
         # 입력 영역
         input_frame = ctk.CTkFrame(self)
         input_frame.pack(fill="x", padx=10, pady=(0, 10))
+        print("Input frame created")
 
         # 프롬프트 라벨
         self.prompt_label = ctk.CTkLabel(
@@ -73,6 +77,7 @@ class TerminalPanel(BasePanel):
             text_color=self.COLORS["primary"]
         )
         self.prompt_label.pack(side="left", padx=5)
+        print("Prompt label added")
 
         # 명령 입력
         self.command_entry = ctk.CTkEntry(
@@ -84,27 +89,49 @@ class TerminalPanel(BasePanel):
         self.command_entry.bind("<Return>", self.execute_command)
         self.command_entry.bind("<Up>", self.previous_command)
         self.command_entry.bind("<Down>", self.next_command)
+        self.command_entry.focus_set()  # 포커스 설정
+        print("Command entry added and focused")
+
+        # 빠른 액션 버튼들
+        actions_frame = ctk.CTkFrame(input_frame)
+        actions_frame.pack(side="right", padx=5)
+        print("Actions frame created")
+
+        ctk.CTkButton(
+            actions_frame,
+            text="📎",
+            width=30,
+            height=30,
+            command=self.attach_file
+        ).pack(side="left", padx=2)
+        ctk.CTkButton(
+            actions_frame,
+            text="📷",
+            width=30,
+            height=30,
+            command=self.attach_image
+        ).pack(side="left", padx=2)
+        ctk.CTkButton(
+            actions_frame,
+            text="📋",
+            width=30,
+            height=30,
+            command=self.paste_from_clipboard
+        ).pack(side="left", padx=2)
+        print("Action buttons added")
 
         # 환영 메시지
         self.print_terminal("=== 텔레그램 멀티컨트롤 터미널 ===")
         self.print_terminal("명령어 목록: help")
         self.print_terminal("")
-
-    def set_session_manager(self, session_manager):
-        """세션 매니저 설정"""
-        self.session_manager = session_manager
-        self.print_terminal("SessionManager 연결 완료", 'cyan')
-
-    def set_message_sender(self, message_sender):
-        """메시지 센더 설정"""
-        self.message_sender = message_sender
-        if message_sender:
-            self.print_terminal("MessageSender 연결 완료", 'cyan')
+        print("Welcome message printed")
 
     def execute_command(self, event=None):
         """명령어 실행"""
+        print("Executing command...")
         command = self.command_entry.get().strip()
         if not command:
+            print("No command entered")
             return "break"
 
         # 명령어 히스토리에 추가
@@ -113,6 +140,7 @@ class TerminalPanel(BasePanel):
 
         # 터미널에 명령어 출력
         self.print_terminal(f"TelegramCtrl> {command}")
+        print(f"Command executed: {command}")
 
         # 명령어 처리
         self.process_command(command)
@@ -123,6 +151,7 @@ class TerminalPanel(BasePanel):
 
     def process_command(self, command: str):
         """명령어 처리"""
+        print(f"Processing command: {command}")
         cmd_parts = command.split()
         if not cmd_parts:
             return
@@ -130,7 +159,6 @@ class TerminalPanel(BasePanel):
         cmd = cmd_parts[0].lower()
         args = cmd_parts[1:] if len(cmd_parts) > 1 else []
 
-        # 내장 명령어 처리
         if cmd == "help":
             self.show_help()
         elif cmd == "clear":
@@ -180,51 +208,29 @@ class TerminalPanel(BasePanel):
     def show_status(self):
         """현재 상태 표시"""
         try:
-            # 세션 상태
             selected_sessions = self.parent.get_selected_sessions()
             self.print_terminal(f"선택된 세션: {len(selected_sessions)}개")
 
-            # 현재 기능
             if hasattr(self.parent, 'function_panel'):
                 current_function = self.parent.function_panel.get_current_function()
                 self.print_terminal(f"현재 기능: {current_function or '없음'}")
 
-            # SessionManager 상태
-            if self.session_manager:
-                self.print_terminal("SessionManager: 연결됨")
-            else:
-                self.print_terminal("SessionManager: 연결되지 않음", 'red')
-
-            # MessageSender 상태
-            if self.message_sender:
-                self.print_terminal("MessageSender: 연결됨")
-            else:
-                self.print_terminal("MessageSender: 연결되지 않음", 'yellow')
-
-            # 애플리케이션 상태
             self.print_terminal("애플리케이션 상태: 정상")
-
         except Exception as e:
-            self.print_terminal(f"상태 확인 오류: {str(e)}", 'red')
+            self.print_terminal(f"상태 확인 오류: {str(e)}")
 
     def show_sessions(self):
         """세션 목록 표시"""
-        if not self.session_manager:
-            self.print_terminal("SessionManager가 연결되지 않았습니다.", 'red')
-            return
-
         try:
-            sessions = self.session_manager.get_session_list()
-            if sessions:
-                self.print_terminal(f"\n활성 세션 목록 ({len(sessions)}개):")
-                self.print_terminal("-" * 50)
-                for session in sessions:
-                    status_icon = {"active": "🟢", "inactive": "🟡", "unknown": "🔴"}.get(session['status'], "❓")
-                    self.print_terminal(f"{status_icon} {session['name']} ({session['username']}) - {session['status']}")
+            selected_sessions = self.parent.get_selected_sessions()
+            if selected_sessions:
+                self.print_terminal("활성 세션:")
+                for session in selected_sessions:
+                    self.print_terminal(f"  - {session}")
             else:
-                self.print_terminal("세션이 없습니다.", 'yellow')
+                self.print_terminal("선택된 세션이 없습니다.")
         except Exception as e:
-            self.print_terminal(f"세션 목록 오류: {str(e)}", 'red')
+            self.print_terminal(f"세션 목록 오류: {str(e)}")
 
     def run_test(self, args):
         """테스트 명령어 실행"""
@@ -233,7 +239,6 @@ class TerminalPanel(BasePanel):
             return
 
         test_type = args[0].lower()
-
         if test_type == "session":
             self.test_sessions()
         elif test_type == "message":
@@ -243,45 +248,15 @@ class TerminalPanel(BasePanel):
 
     def test_sessions(self):
         """세션 연결 테스트"""
-        if not self.session_manager:
-            self.print_terminal("SessionManager가 연결되지 않았습니다.", 'red')
-            return
-
-        self.print_terminal("세션 연결 테스트 시작...", 'yellow')
-        threading.Thread(target=self._test_sessions_async, daemon=True).start()
-
-    def _test_sessions_async(self):
-        """비동기 세션 테스트"""
-        try:
-            sessions = self.session_manager.get_session_list()
-            self.after(0, self.print_terminal, f"세션 목록 조회 성공: {len(sessions)}개")
-
-            for session in sessions:
-                status = self.session_manager.check_session_status(session['name'])
-                status_color = 'green' if status == 'active' else 'yellow' if status == 'inactive' else 'red'
-                self.after(0, self.print_terminal, f"  - {session['name']}: {status}", status_color)
-                time.sleep(0.1)
-
-            self.after(0, self.print_terminal, "세션 테스트 완료!", 'cyan')
-        except Exception as e:
-            self.after(0, self.print_terminal, f"세션 테스트 오류: {str(e)}", 'red')
+        self.print_terminal("세션 연결 테스트 시작...")
+        # TODO: Grok의 SessionManager와 연동하여 실제 테스트 구현
+        self.print_terminal("구현 예정...")
 
     def test_message(self):
         """메시지 전송 테스트"""
-        self.print_terminal("메시지 전송 테스트 시작...", 'yellow')
-        if not self.message_sender:
-            self.print_terminal("MessageSender가 연결되지 않았습니다.", 'red')
-            self.print_terminal("시뮬레이션 모드로 실행합니다.", 'yellow')
-
-            # 시뮬레이션
-            for i in range(3):
-                time.sleep(0.5)
-                self.print_terminal(f"  테스트 단계 {i+1}/3 실행 중...")
-            self.print_terminal("메시지 전송 시뮬레이션 완료!", 'cyan')
-            return
-
-        # 실제 구현은 MessageSender와 연동
-        self.print_terminal("메시지 전송 기능은 개발 중입니다.", 'yellow')
+        self.print_terminal("메시지 전송 테스트 시작...")
+        # TODO: 메시지 전송 테스트 구현
+        self.print_terminal("구현 예정...")
 
     def show_log_commands(self):
         """로그 관련 명령어 표시"""
@@ -294,17 +269,12 @@ class TerminalPanel(BasePanel):
 """
         self.print_terminal(log_help)
 
-    def print_terminal(self, text: str, color: Optional[str] = None):
+    def print_terminal(self, text: str, color: str = None):
         """터미널에 텍스트 출력"""
         self.terminal_output.configure(state="normal")
-
         if color:
-            # 색상 태그 설정
-            self.terminal_output.tag_config(color, foreground=self.COLORS.get(color, color))
-            self.terminal_output.insert("end", text + "\n", color)
-        else:
-            self.terminal_output.insert("end", text + "\n")
-
+            pass  # 색상 텍스트 추가 (향후 구현)
+        self.terminal_output.insert("end", text + "\n")
         self.terminal_output.see("end")
         self.terminal_output.configure(state="disabled")
 
@@ -323,14 +293,13 @@ class TerminalPanel(BasePanel):
                 filetypes=[("텍스트 파일", "*.txt"), ("모든 파일", "*.*")],
                 title="터미널 로그 저장"
             )
-
             if file_path:
                 content = self.terminal_output.get("1.0", "end")
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                self.print_terminal(f"로그 저장 완료: {file_path}", 'cyan')
+                self.print_terminal(f"로그 저장 완료: {file_path}")
         except Exception as e:
-            self.print_terminal(f"로그 저장 오류: {str(e)}", 'red')
+            self.print_terminal(f"로그 저장 오류: {str(e)}")
 
     def previous_command(self, event):
         """이전 명령어 (↑ 키)"""
@@ -352,3 +321,46 @@ class TerminalPanel(BasePanel):
             self.history_index += 1
             self.command_entry.delete(0, "end")
         return "break"
+
+    def attach_file(self):
+        """파일 첨부"""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="파일 선택",
+                filetypes=[("모든 파일", "*.*")]
+            )
+            if file_path:
+                file_name = os.path.basename(file_path)
+                self.print_terminal(f"파일 첨부: {file_name}")
+                # TODO: 파일 첨부 기능 구현
+        except Exception as e:
+            self.print_terminal(f"파일 첨부 오류: {str(e)}")
+
+    def attach_image(self):
+        """이미지 첨부"""
+        try:
+            file_path = filedialog.askopenfilename(
+                title="이미지 선택",
+                filetypes=[
+                    ("이미지 파일", "*.png *.jpg *.jpeg *.gif *.bmp"),
+                    ("모든 파일", "*.*")
+                ]
+            )
+            if file_path:
+                file_name = os.path.basename(file_path)
+                self.print_terminal(f"이미지 첨부: {file_name}")
+                # TODO: 이미지 첨부 기능 구현
+        except Exception as e:
+            self.print_terminal(f"이미지 첨부 오류: {str(e)}")
+
+    def paste_from_clipboard(self):
+        """클립보드에서 붙여넣기"""
+        try:
+            clipboard_text = self.clipboard_get()
+            if clipboard_text:
+                current_text = self.command_entry.get()
+                self.command_entry.delete(0, "end")
+                self.command_entry.insert(0, current_text + clipboard_text)
+                self.print_terminal("클립보드 내용 붙여넣기 완료")  # f-string 제거
+        except Exception as e:
+            self.print_terminal(f"클립보드 오류: {str(e)}")
