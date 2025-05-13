@@ -1,0 +1,28 @@
+{
+    "api_settings": {
+        "api_id": 24413779,
+        "api_hash": "6f8a7e248b581b5159ea62ba3ca279fe"
+    },
+    "rate_limits": {
+        "daily_per_account": 500,
+        "hourly_per_account": 100,
+        "personal_min_delay": 1.5,
+        "personal_max_delay": 3.0,
+        "group_min_delay": 3.0,
+        "group_max_delay": 6.0,
+        "flood_wait_buffer": 60,
+        "priority_mode": "balanced",
+        "max_concurrent_accounts": 5
+    },
+    "app_settings": {
+        "session_dir": "./sessions/",
+        "log_dir": "logs",
+        "report_dir": "reports",
+        "log_level": "INFO",
+        "auto_retry": true
+    },
+    "plugins": {
+        "enabled": [],
+        "paths": []
+    }
+}
